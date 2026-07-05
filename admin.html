@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Atletas Energisa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js" defer></script>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+  <!-- ── LOADING OVERLAY ──────────────────────────────── -->
+  <div id="appLoadingOverlay" class="app-loading">
+    <div class="app-loading__box">
+      <img src="assets/logos/logo-comite-branca-trim.png" alt="Atletas Energisa" class="app-loading__logo" />
+      <div class="app-loading__spinner"></div>
+      <p class="app-loading__text">Carregando portal…</p>
+    </div>
+  </div>
+
+  <!-- ── TOAST ─────────────────────────────────────────── -->
+  <div id="toastContainer"></div>
+
+  <!-- ── TOPBAR ────────────────────────────────────────── -->
+  <header class="app-topbar">
+    <div class="app-topbar__brand">
+      <button class="app-topbar__hamburger" id="sidebarToggleBtn" type="button" aria-label="Menu">
+        <i data-lucide="menu"></i>
+      </button>
+      <img class="app-topbar__logo" src="assets/logos/logo-comite-branca-trim.png" alt="Atletas Energisa" />
+    </div>
+
+    <div class="app-topbar__search">
+      <i data-lucide="search" class="app-topbar__search-icon"></i>
+      <input type="text" id="buscaGlobalAtleta" class="app-topbar__search-input" placeholder="Buscar atleta…" autocomplete="off" />
+      <kbd class="app-topbar__search-hint">/</kbd>
+      <div id="resultadoBuscaGlobal" class="global-search-results"></div>
+    </div>
+
+    <div class="app-topbar__actions">
+      <button id="btnToggleTema" class="app-topbar__icon-btn" type="button" title="Alternar tema">
+        <i data-lucide="moon"></i>
+      </button>
+      <div class="app-topbar__user" id="topbarUser">
+        <div class="app-topbar__avatar" id="userAvatar">?</div>
+        <div class="app-topbar__user-info">
+          <strong id="userDisplayName">—</strong>
+          <span id="userGroupBadge" style="display:none;"></span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="app-topbar__icon-btn" type="button" title="Sair">
+        <i data-lucide="log-out"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── SIDEBAR ───────────────────────────────────────── -->
+  <aside class="app-sidebar" id="appSidebar">
+    <nav class="app-sidebar__nav" id="menuNavegacao"></nav>
+  </aside>
+
+  <!-- ── MAIN ──────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- ================================================
+         INÍCIO — Visão Estratégica
+         ================================================ -->
+    <section id="visao-geral" class="active-section">
+
+      <div class="vg-header">
+        <div>
+          <h2>Visão Estratégica</h2>
+          <p>Acompanhamento do programa · <span id="dashMesAtualResumo">—</span></p>
+        </div>
+        <div class="vg-export-drop" id="vgExportDrop">
+          <button class="btn-primario vg-export-drop__btn" id="btnExportarDropdown" type="button" aria-haspopup="true" aria-expanded="false">
+            <i data-lucide="download"></i> Exportar
+            <i data-lucide="chevron-down" class="vg-export-drop__caret"></i>
+          </button>
+          <div class="vg-export-drop__menu" role="menu">
+            <div class="vg-export-drop__group">
+              <span class="vg-export-drop__label">Relatórios</span>
+              <button id="btnGerarInformativoRanking2" class="vg-export-drop__item vg-export-drop__item--accent" role="menuitem" type="button">
+                <i data-lucide="trophy"></i> Informativo ranking
+              </button>
+              <button id="btnExportarPDF2" class="vg-export-drop__item" role="menuitem" type="button">
+                <i data-lucide="file-text"></i> Report executivo (PDF)
+              </button>
+              <button id="btnModoApresentacao" class="vg-export-drop__item" role="menuitem" type="button">
+                <i data-lucide="presentation"></i> Apresentação
+              </button>
+            </div>
+            <div class="vg-export-drop__group">
+              <span class="vg-export-drop__label">Planilhas</span>
+              <button id="btnExportarListaAtletas" class="vg-export-drop__item" role="menuitem" type="button">
+                <i data-lucide="users"></i> Lista de atletas
+              </button>
+              <button id="btnExportarListaEventos" class="vg-export-drop__item" role="menuitem" type="button">
+                <i data-lucide="calendar-days"></i> Lista de eventos
+              </button>
+              <button id="btnExportarParticipacaoAtletas" class="vg-export-drop__item" role="menuitem" type="button">
+                <i data-lucide="activity"></i> Participação por atleta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner de status -->
+      <div class="vg-status-banner" id="vgStatusBanner">
+        <div class="vg-status-banner__dot" id="vgStatusDot"></div>
+        <span id="vgStatusText">Carregando programa…</span>
+        <span class="vg-status-banner__sep">·</span>
+        <span id="dashResumoSaude">Aguardando dados</span>
+      </div>
+
+      <!-- Hero sticky: anel + KPIs -->
+      <div class="vg-hero-sticky-wrap">
+      <div class="vg-hero">
+        <div class="vg-hero__engagement">
+          <div class="vg-ring" id="vgRing">
+            <svg viewBox="0 0 100 100" class="vg-ring__svg">
+              <circle class="vg-ring__track" cx="50" cy="50" r="40"/>
+              <circle class="vg-ring__fill" id="vgRingFill" cx="50" cy="50" r="40"
+                stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+            </svg>
+            <div class="vg-ring__label">
+              <strong id="engajamento30d">0%</strong>
+              <span>engajados</span>
+            </div>
+          </div>
+          <div class="vg-hero__eng-copy">
+            <p class="vg-hero__eng-title">Engajamento 30 dias</p>
+            <p class="vg-hero__eng-sub"><b id="dashAtivos30d">0</b> de <b id="totalAtivosGeral">0</b> atletas ativos recentemente</p>
+            <p class="vg-hero__eng-tend" id="dashTendencia3m">—</p>
+          </div>
+        </div>
+
+        <div class="vg-hero__divider"></div>
+
+        <div class="vg-hero__kpis">
+          <div class="vg-hero__kpi" style="--kpi-color:var(--primary)">
+            <div class="vg-hero__kpi__icon"><i data-lucide="ticket-check"></i></div>
+            <div><strong id="dashParticipacoes">0</strong><span>Participações</span></div>
+          </div>
+          <div class="vg-hero__kpi" style="--kpi-color:var(--accent)">
+            <div class="vg-hero__kpi__icon"><i data-lucide="route"></i></div>
+            <div><strong id="dashKmTotal">0 km</strong><span>KM acumulado</span></div>
+          </div>
+          <div class="vg-hero__kpi" style="--kpi-color:var(--secondary)">
+            <div class="vg-hero__kpi__icon"><i data-lucide="dollar-sign"></i></div>
+            <div><strong id="totalInvestimento">R$ 0,00</strong><span>Custo realizado</span></div>
+          </div>
+          <div class="vg-hero__kpi" style="--kpi-color:#8b5cf6">
+            <div class="vg-hero__kpi__icon"><i data-lucide="trending-up"></i></div>
+            <div><strong id="roiAtleta">R$ 0,00</strong><span>Custo / atleta</span></div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /vg-hero-sticky-wrap -->
+
+      <!-- Gráfico + Modalidades + Sidebar -->
+      <div class="vg-content">
+        <div class="vg-left-col">
+          <div class="vg-chart-wrap">
+            <div class="vg-section-head">
+              <div>
+                <h3 class="vg-section-title"><i data-lucide="activity"></i> Evolução mensal</h3>
+                <p class="vg-section-desc" id="dashMesAtualResumo_chart">—</p>
+              </div>
+              <span class="vg-trend-pill" id="dashTendencia3m_chart">—</span>
+            </div>
+            <div class="vg-chart-shell" id="vgChartShell">
+              <canvas id="graficoTendencia"></canvas>
+              <div class="vg-chart-empty" id="vgChartEmpty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <strong>Sem dados ainda</strong>
+                <p>Registre participações para ver a evolução mensal.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="vg-modalities">
+          <div class="vg-mod vg-mod--bike">
+          <div class="vg-mod__top">
+            <div class="vg-mod__identity">
+              <div class="vg-mod__icon"><i data-lucide="bike"></i></div>
+              <div>
+                <p class="vg-mod__name">Bicicleta</p>
+                <p class="vg-mod__count"><strong id="totalBike">0</strong> atletas</p>
+              </div>
+            </div>
+            <div class="vg-mod__eng-block">
+              <strong id="dashBikeEngajamento">0%</strong>
+              <span>engajados</span>
+            </div>
+          </div>
+          <div class="vg-mod__bar"><div class="vg-mod__bar-fill" id="dashBikeEngBar" style="width:0%"></div></div>
+          <p class="vg-mod__bar-meta"><span id="dashBikeAtivos30d">0</span> de <span id="totalBike2">—</span> ativos nos últimos 30 dias · <span id="dashBikeInativos">0</span> inativos</p>
+          <div class="vg-mod__stats">
+            <div class="vg-mod__stat"><span>Participações</span><strong id="dashBikeParticipacoes">0</strong></div>
+            <div class="vg-mod__stat"><span>Pontos</span><strong id="dashBikePontosTotal">0</strong></div>
+            <div class="vg-mod__stat"><span>Média pts</span><strong id="mediaBike">0</strong></div>
+            <div class="vg-mod__stat"><span>KM total</span><strong id="dashBikeKm">0 km</strong></div>
+          </div>
+          <div class="vg-mod__top-athlete">
+            <i data-lucide="crown"></i><span>Top atleta</span><strong id="dashBikeTop">—</strong>
+          </div>
+        </div>
+
+        <div class="vg-mod vg-mod--corrida">
+          <div class="vg-mod__top">
+            <div class="vg-mod__identity">
+              <div class="vg-mod__icon"><i data-lucide="footprints"></i></div>
+              <div>
+                <p class="vg-mod__name">Corrida</p>
+                <p class="vg-mod__count"><strong id="totalCorrida">0</strong> atletas</p>
+              </div>
+            </div>
+            <div class="vg-mod__eng-block">
+              <strong id="dashCorridaEngajamento">0%</strong>
+              <span>engajados</span>
+            </div>
+          </div>
+          <div class="vg-mod__bar"><div class="vg-mod__bar-fill" id="dashCorridaEngBar" style="width:0%"></div></div>
+          <p class="vg-mod__bar-meta"><span id="dashCorridaAtivos30d">0</span> de <span id="totalCorrida2">—</span> ativos nos últimos 30 dias · <span id="dashCorridaInativos">0</span> inativos</p>
+          <div class="vg-mod__stats">
+            <div class="vg-mod__stat"><span>Participações</span><strong id="dashCorridaParticipacoes">0</strong></div>
+            <div class="vg-mod__stat"><span>Pontos</span><strong id="dashCorridaPontosTotal">0</strong></div>
+            <div class="vg-mod__stat"><span>Média pts</span><strong id="mediaCorrida">0</strong></div>
+            <div class="vg-mod__stat"><span>KM total</span><strong id="dashCorridaKm">0 km</strong></div>
+          </div>
+          <div class="vg-mod__top-athlete">
+            <i data-lucide="crown"></i><span>Top atleta</span><strong id="dashCorridaTop">—</strong>
+          </div>
+        </div>
+          </div><!-- /vg-modalities -->
+
+          <!-- Pódio + Radar (dentro da coluna esquerda) -->
+          <div class="vg-bottom">
+            <div class="vg-card">
+              <div class="vg-section-head">
+                <h3 class="vg-section-title"><i data-lucide="award"></i> Pódio Top 3</h3>
+                <p class="vg-section-desc">Por pontuação acumulada</p>
+              </div>
+              <div class="vg-podium-cols">
+                <div>
+                  <p class="vg-sub-label"><i data-lucide="bike"></i> Bike</p>
+                  <ul id="listaPodioBike" class="podium-list"></ul>
+                </div>
+                <div>
+                  <p class="vg-sub-label"><i data-lucide="footprints"></i> Corrida</p>
+                  <ul id="listaPodioCorrida" class="podium-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="vg-card">
+              <div class="vg-section-head">
+                <h3 class="vg-section-title"><i data-lucide="alert-triangle"></i> Radar de Inatividade</h3>
+                <p class="vg-section-desc">Ausentes há mais de 30 dias</p>
+              </div>
+              <div class="vg-radar-cols">
+                <div>
+                  <p class="vg-sub-label"><i data-lucide="bike"></i> Bike</p>
+                  <ul id="listaEvasaoBike" class="inactivity-list"></ul>
+                </div>
+                <div>
+                  <p class="vg-sub-label"><i data-lucide="footprints"></i> Corrida</p>
+                  <ul id="listaEvasaoCorrida" class="inactivity-list"></ul>
+                </div>
+              </div>
+            </div>
+          </div><!-- /vg-bottom -->
+        </div><!-- /vg-left-col -->
+
+        <div class="vg-sidebar">
+          <div class="vg-card">
+            <div class="vg-section-head">
+              <h3 class="vg-section-title"><i data-lucide="sparkles"></i> Prioridades</h3>
+              <div class="vg-count-pills">
+                <span class="vg-cpill vg-cpill--warn"><b id="dashEventosPendentes">0</b>&nbsp;eventos</span>
+                <span class="vg-cpill"><b id="dashFilaAguardando">0</b>&nbsp;fila</span>
+              </div>
+            </div>
+            <div id="listaAcoesRecomendadas" class="strategic-action-list">
+              <div class="vg-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg><strong>Tudo em ordem</strong><p>Nenhuma ação prioritária no momento.</p></div>
+            </div>
+          </div>
+
+          <div class="vg-card">
+            <div class="vg-section-head">
+              <h3 class="vg-section-title"><i data-lucide="calendar-days"></i> Próximos eventos</h3>
+              <button id="abrirModalEvento" class="vg-btn-new" type="button">
+                <i data-lucide="plus"></i> Novo
+              </button>
+            </div>
+            <div id="listaEventosAgenda" class="events-agenda-list">
+              <div class="vg-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><strong>Sem eventos próximos</strong><p>Clique em "Novo" para agendar.</p></div>
+            </div>
+          </div>
+
+          <div class="vg-card vg-financeiro">
+            <h3 class="vg-section-title" style="margin-bottom:14px;"><i data-lucide="bar-chart-2"></i> Eficiência financeira</h3>
+            <div class="vg-fin-grid">
+              <div class="vg-fin-cell"><span>Custo / participação</span><strong id="dashCustoParticipacao">R$ 0,00</strong></div>
+              <div class="vg-fin-cell"><span>Custo / km</span><strong id="dashCustoKm">R$ 0,00</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IDs mantidos para compatibilidade com JS -->
+      <span id="btnGerarInformativoRanking" style="display:none"></span>
+
+      <!-- IDs ocultos para compatibilidade JS -->
+      <span id="engajamento30d_badge" style="display:none">0%</span>
+      <button id="btnExportarPDF" style="display:none" type="button"></button>
+
+    </section>
+
+
+    <!-- ================================================
+         ATLETAS
+         ================================================ -->
+    <section id="atletas">
+      <div class="section-header">
+        <div class="section-header__text">
+          <h2>Atletas</h2>
+          <p>Veja os atletas do programa, cadastre novos e gerencie as equipes de Bike e Corrida.</p>
+        </div>
+      </div>
+
+      <div class="sub-menu">
+        <button class="sub-tab active" data-target="sub-ver-atletas"><i data-lucide="users"></i> Ver atletas</button>
+        <button class="sub-tab" data-target="sub-cadastrar"><i data-lucide="user-plus"></i> Cadastrar</button>
+        <button class="sub-tab" data-target="sub-equipes"><i data-lucide="list-checks"></i> Equipes</button>
+        <button class="sub-tab admin-only-element" data-target="sub-aprovacoes"><i data-lucide="clock-4"></i> Pedidos pendentes</button>
+      </div>
+
+      <!-- Ver atletas -->
+      <div id="sub-ver-atletas" class="sub-content active">
+        <div class="athlete-kpi-grid">
+          <div class="athlete-kpi-card" style="--kpi-color:var(--primary)">
+            <div class="athlete-kpi-card__icon"><i data-lucide="route"></i></div>
+            <div class="athlete-kpi-card__body"><span>KM total</span><strong id="totalKmAtletas">0 km</strong><small>Soma coletiva dos atletas</small></div>
+          </div>
+          <div class="athlete-kpi-card" style="--kpi-color:#f37021">
+            <div class="athlete-kpi-card__icon"><i data-lucide="bike"></i></div>
+            <div class="athlete-kpi-card__body"><span>Bicicleta</span><strong id="totalKmBike">0 km</strong><small>Quilometragem acumulada</small></div>
+          </div>
+          <div class="athlete-kpi-card" style="--kpi-color:#00b37e">
+            <div class="athlete-kpi-card__icon"><i data-lucide="footprints"></i></div>
+            <div class="athlete-kpi-card__body"><span>Corrida</span><strong id="totalKmCorrida">0 km</strong><small>Quilometragem acumulada</small></div>
+          </div>
+          <div class="athlete-kpi-card" style="--kpi-color:#8b5cf6">
+            <div class="athlete-kpi-card__icon"><i data-lucide="filter"></i></div>
+            <div class="athlete-kpi-card__body"><span>Filtrados</span><strong id="totalAtletasConsulta">0</strong><small id="totalEventosConsulta">0 participações</small></div>
+          </div>
+        </div>
+
+        <div class="card athlete-filter-card">
+          <div class="athlete-filter-head">
+            <div>
+              <strong>Lista de atletas</strong>
+              <span>Clique num atleta para abrir a ficha completa.</span>
+            </div>
+            <div class="view-toggle" id="toggleVisualAtletas" role="group">
+              <button type="button" class="view-toggle-btn active" data-view="cards"><i data-lucide="layout-grid"></i> Cards</button>
+              <button type="button" class="view-toggle-btn" data-view="lista"><i data-lucide="list"></i> Lista</button>
+            </div>
+          </div>
+          <div class="athlete-filter-grid">
+            <div>
+              <label>Buscar</label>
+              <input type="text" id="filtroAtletaCards" placeholder="Nome, cidade ou equipe…" />
+            </div>
+            <div>
+              <label>Equipe</label>
+              <select id="filtroEquipeAtletaCards">
+                <option value="">Todas as equipes</option>
+                <option value="Bicicleta">Bicicleta</option>
+                <option value="Corrida">Corrida</option>
+                <option value="Fila - Bicicleta">Fila de espera — Bike</option>
+                <option value="Fila - Corrida">Fila de espera — Corrida</option>
+                <option value="Nenhuma">Sem equipe</option>
+              </select>
+            </div>
+            <div>
+              <label>Situação</label>
+              <select id="filtroStatusAtletaCards">
+                <option value="ativos">Ativos</option>
+                <option value="todos">Todos</option>
+                <option value="inativos">Inativos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="gridAtletasConsulta" class="athlete-card-grid">
+          <div class="vg-empty-state" style="grid-column:1/-1;padding:48px 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <strong>Nenhum atleta encontrado</strong>
+            <p>Cadastre atletas ou ajuste os filtros para ver resultados.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cadastrar -->
+      <div id="sub-cadastrar" class="sub-content">
+
+        <!-- Importar por planilha -->
+        <div class="cadastro-import-strip">
+          <div class="cadastro-import-strip__info">
+            <div class="cadastro-form-icon cadastro-form-icon--green cadastro-form-icon--sm"><i data-lucide="file-spreadsheet"></i></div>
+            <div>
+              <strong>Importar por planilha</strong>
+              <span>Baixe o modelo, preencha e importe vários atletas de uma só vez</span>
+            </div>
+          </div>
+          <div class="cadastro-import-strip__actions">
+            <button id="btnExportarModeloAtletas" class="cadastro-import-btn cadastro-import-btn--outline">
+              <i data-lucide="download"></i> Baixar modelo
+            </button>
+            <label for="btnImportarAtletasExcel" class="cadastro-import-btn cadastro-import-btn--solid">
+              <i data-lucide="upload"></i> Importar planilha
+            </label>
+            <input type="file" id="btnImportarAtletasExcel" accept=".xlsx,.xls" style="display:none;" />
+          </div>
+        </div>
+
+        <div class="cadastro-layout">
+
+          <!-- Formulário manual -->
+          <div class="card cadastro-form-card">
+            <div class="cadastro-form-header">
+              <div class="cadastro-form-icon"><i data-lucide="user-plus"></i></div>
+              <div>
+                <h3>Cadastro manual</h3>
+                <p>Preencha os dados do atleta para adicioná-lo ao programa.</p>
+              </div>
+            </div>
+
+
+            <div class="cadastro-section-label">Dados pessoais</div>
+            <div class="cadastro-grid cadastro-grid--4">
+              <div class="cadastro-field cadastro-field--c4">
+                <label for="novoNome">Nome completo</label>
+                <input type="text" id="novoNome" placeholder="Ex: João Silva" />
+              </div>
+              <div class="cadastro-field cadastro-field--c2">
+                <label for="novoEmail">E-mail</label>
+                <input type="email" id="novoEmail" placeholder="joao@energisa.com" />
+              </div>
+              <div class="cadastro-field">
+                <label for="novaDataNasc">Data de nascimento</label>
+                <input type="date" id="novaDataNasc" />
+              </div>
+              <div class="cadastro-field">
+                <label for="novoSexo">Sexo</label>
+                <select id="novoSexo" data-custom-select>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                  <option value="Prefiro não informar">Prefiro não informar</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cadastro-section-label">Dados do programa</div>
+            <div class="cadastro-grid cadastro-grid--4">
+              <div class="cadastro-field cadastro-field--c2">
+                <label for="novaLocalidade">Localidade / Polo</label>
+                <input type="text" id="novaLocalidade" placeholder="Ex: Sede, João Pessoa…" />
+              </div>
+              <div class="cadastro-field">
+                <label for="novoAnoEntrada">Ano de entrada</label>
+                <input type="number" id="novoAnoEntrada" placeholder="Ex: 2026" min="2020" max="2099" />
+              </div>
+              <div class="cadastro-field">
+                <label for="novoPapel">Equipe / modalidade</label>
+                <select id="novoPapel" data-custom-select>
+                  <option value="Bicicleta" data-icon="bike">Bicicleta</option>
+                  <option value="Corrida" data-icon="footprints">Corrida</option>
+                  <option value="Fila - Bicicleta" data-icon="clock">Fila de espera — Bike</option>
+                  <option value="Fila - Corrida" data-icon="clock">Fila de espera — Corrida</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="cadastroExtraCampos"></div>
+
+            <button id="btnCadastrarPessoa" class="btn-primario cadastro-submit">
+              <i data-lucide="user-plus"></i> Adicionar atleta
+            </button>
+          </div>
+
+        </div><!-- /cadastro-layout -->
+
+      </div>
+
+      <!-- Equipes -->
+      <div id="sub-equipes" class="sub-content">
+        <div class="tertiary-menu">
+          <button class="t-tab active" data-target="tab-fila">Filas de espera</button>
+          <button class="t-tab" data-target="tab-bike">🚴 Bicicleta</button>
+          <button class="t-tab" data-target="tab-corrida">🏃 Corrida</button>
+          <button class="t-tab" data-target="tab-comite">Comitê</button>
+        </div>
+        <div id="tab-fila" class="t-content active">
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div>
+              <h4 style="color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><i data-lucide="bike" style="width:16px;"></i> Fila — Bicicleta</h4>
+              <div class="tabela-container"><table class="tabela-simples"><tbody id="listaFilaBike"></tbody></table></div>
+            </div>
+            <div>
+              <h4 style="color:var(--secondary);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><i data-lucide="footprints" style="width:16px;"></i> Fila — Corrida</h4>
+              <div class="tabela-container"><table class="tabela-simples"><tbody id="listaFilaCorrida"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-bike" class="t-content">
+          <div class="tabela-container"><table class="tabela-simples"><tbody id="listaBicicleta"></tbody></table></div>
+        </div>
+        <div id="tab-corrida" class="t-content">
+          <div class="tabela-container"><table class="tabela-simples"><tbody id="listaCorrida"></tbody></table></div>
+        </div>
+        <div id="tab-comite" class="t-content">
+          <div class="tabela-container"><table class="tabela-simples"><tbody id="listaComite"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- Pedidos pendentes (admin) -->
+      <div id="sub-aprovacoes" class="sub-content admin-only-element">
+        <div class="tabela-container">
+          <table class="tabela-simples"><tbody id="listaAprovacoes"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================================================
+         REGISTRAR
+         ================================================ -->
+    <section id="contabilizacao">
+      <div class="section-header">
+        <div class="section-header__text">
+          <h2>Registrar</h2>
+          <p>Lance treinos e eventos das equipes, consulte o histórico e gere relatórios.</p>
+        </div>
+        <button class="btn-primario section-header__action" id="btnIrLancar">
+          <i data-lucide="pencil-line"></i> Registrar treino
+        </button>
+      </div>
+
+      <div class="sub-menu">
+        <button class="sub-tab active" data-target="sub-lancar"><i data-lucide="pencil-line"></i> Registrar treino</button>
+        <button class="sub-tab" data-target="sub-historico"><i data-lucide="clock"></i> Histórico</button>
+        <button class="sub-tab" data-target="sub-relatorio"><i data-lucide="chart-bar"></i> Relatório anual</button>
+      </div>
+
+      <!-- Registrar treino -->
+      <div id="sub-lancar" class="sub-content active">
+        <div class="flex-between" style="margin-bottom:16px;">
+          <h3 style="font-size:1rem;color:var(--text);">Registrar lançamento</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="btnExportarModeloExcel" class="btn-secundario">
+              <i data-lucide="download"></i> Baixar modelo
+            </button>
+            <label for="btnImportarExcel" class="btn-primario" style="cursor:pointer;">
+              <i data-lucide="upload"></i> Importar pontuações
+            </label>
+            <input type="file" id="btnImportarExcel" accept=".xlsx,.xls" style="display:none;" />
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="grid-2" style="margin-bottom:14px;">
+            <div>
+              <label><i data-lucide="calendar" style="width:13px;vertical-align:middle;"></i> Vincular a evento</label>
+              <select id="lancarEventoSelect">
+                <option value="">Nenhum (Lançamento Avulso)</option>
+              </select>
+            </div>
+            <div>
+              <label>Descrição do treino / atividade</label>
+              <input type="text" id="descTreino" placeholder="Ex: Treino de Sábado / Evento X" />
+            </div>
+          </div>
+          <div class="grid-2" style="margin-bottom:14px;">
+            <div><label>Data</label><input type="date" id="dataTreino" /></div>
+            <div>
+              <label>Equipe alvo</label>
+              <select id="modTreino">
+                <option value="">Selecione a equipe…</option>
+                <option value="Bicicleta">Bicicleta</option>
+                <option value="Corrida">Corrida</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>KM percorridos por atleta</label>
+            <input type="number" id="kmTreino" min="0" step="0.01" placeholder="Ex: 5, 10 ou 21.1" />
+            <small style="color:var(--text-light);font-size:.78rem;margin-top:4px;display:block;">Opcional. Será somado uma vez por atleta no lançamento.</small>
+          </div>
+        </div>
+
+        <div id="areaTabelaPontuacao" style="display:none;">
+          <div class="tabela-container"><table class="tabela-simples" id="tabelaPontuacao"></table></div>
+        </div>
+        <div class="lancamento-save-bar">
+          <button id="btnSalvarPontuacao" class="btn-primario" disabled>
+            <i data-lucide="save"></i> Salvar lançamento
+          </button>
+          <small>Selecione a equipe e marque os atletas antes de salvar.</small>
+        </div>
+      </div>
+
+      <!-- Histórico -->
+      <div id="sub-historico" class="sub-content">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+            <div style="flex:1;min-width:120px;"><label>Mês</label><input type="month" id="filtroMesHistorico" /></div>
+            <div style="flex:1;min-width:120px;">
+              <label>Equipe</label>
+              <select id="filtroEquipeHistorico">
+                <option value="">Todas</option>
+                <option value="Bicicleta">Bicicleta</option>
+                <option value="Corrida">Corrida</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <label>Status</label>
+              <select id="filtroStatusHistorico">
+                <option value="ativos">Apenas Ativos</option>
+                <option value="todos">Exibir Todos</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:120px;"><label>Atleta</label><input type="text" id="filtroNomeHistorico" placeholder="Buscar nome…" /></div>
+            <div>
+              <label style="visibility:hidden;display:block;">.</label>
+              <button id="btnLimparFiltrosExtrato" class="btn-acao"><i data-lucide="filter-x"></i> Limpar</button>
+            </div>
+          </div>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela-simples">
+            <thead><tr><th>Data</th><th>Atleta</th><th>Eq.</th><th>Critério</th><th>Pts</th><th>Ação</th></tr></thead>
+            <tbody id="listaHistorico"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Relatório anual -->
+      <div id="sub-relatorio" class="sub-content">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <span></span>
+          <button id="btnExportarExcel" class="btn-primario" style="background:#107c41;">
+            <i data-lucide="sheet"></i> Exportar Excel
+          </button>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;">
+            <div style="flex:1;min-width:100px;"><label>Ano base</label><input type="number" id="filtroAnoRelatorio" /></div>
+            <div style="flex:1;min-width:100px;">
+              <label>Equipe</label>
+              <select id="filtroEquipeRelatorio">
+                <option value="">Todas</option>
+                <option value="Bicicleta">Bike</option>
+                <option value="Corrida">Corrida</option>
+              </select>
+            </div>
+            <div>
+              <label style="visibility:hidden;display:block;">.</label>
+              <button id="btnGerarRelatorio" class="btn-primario">Filtrar</button>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:14px;">
+            <label style="color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><i data-lucide="calendar-days" style="width:14px;"></i> Período de avaliação</label>
+            <div id="containerMesesRelatorio" style="display:flex;flex-wrap:wrap;gap:12px;font-size:.85rem;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="chkTodosMeses" checked> <strong>Todos</strong></label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="1" checked> Jan</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="2" checked> Fev</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="3" checked> Mar</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="4" checked> Abr</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="5" checked> Mai</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="6" checked> Jun</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="7" checked> Jul</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="8" checked> Ago</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="9" checked> Set</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="10" checked> Out</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="11" checked> Nov</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="chk-mes-relatorio" value="12" checked> Dez</label>
+            </div>
+          </div>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela-simples" id="tabelaConsolidada">
+            <thead id="headRelatorio"></thead>
+            <tbody id="listaRelatorio"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================================================
+         FINANCEIRO
+         ================================================ -->
+    <section id="financeiro">
+      <div class="section-header">
+        <div class="section-header__text">
+          <h2>Financeiro</h2>
+          <p>Acompanhe o orçamento do programa, veja o que foi gasto e o que está previsto.</p>
+        </div>
+        <button class="btn-primario section-header__action" id="btnIrGastos">
+          <i data-lucide="plus"></i> Novo gasto
+        </button>
+      </div>
+
+      <div class="sub-menu">
+        <button class="sub-tab active" data-target="sub-fin-dash"><i data-lucide="chart-pie"></i> Resumo</button>
+        <button class="sub-tab" data-target="sub-fin-planilha"><i data-lucide="table"></i> Gastos</button>
+      </div>
+
+      <!-- Resumo -->
+      <div id="sub-fin-dash" class="sub-content active">
+        <div class="fin-kpi-grid" style="margin-bottom:20px;">
+          <div class="fin-kpi-card" style="--kpi-color:var(--primary)">
+            <div class="athlete-kpi-card__icon"><i data-lucide="wallet"></i></div>
+            <div class="athlete-kpi-card__body">
+              <span>Total proposto</span>
+              <strong id="dashFinOrcadoTotal">R$ 0,00</strong>
+              <small>Orçamento aprovado</small>
+            </div>
+          </div>
+          <div class="fin-kpi-card" style="--kpi-color:var(--danger)">
+            <div class="athlete-kpi-card__icon"><i data-lucide="receipt"></i></div>
+            <div class="athlete-kpi-card__body">
+              <span>Total realizado</span>
+              <strong id="dashFinRealizadoTotal">R$ 0,00</strong>
+              <small>Gasto confirmado</small>
+            </div>
+          </div>
+          <div class="fin-kpi-card" id="cardSaldoGlobal" style="--kpi-color:var(--secondary)">
+            <div class="athlete-kpi-card__icon"><i data-lucide="trending-up"></i></div>
+            <div class="athlete-kpi-card__body">
+              <span>Saldo / desvio</span>
+              <strong id="dashFinSaldoTotal">R$ 0,00</strong>
+              <small>Proposto menos realizado</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3 style="margin-bottom:12px;"><i data-lucide="calculator"></i> Resumo por equipe</h3>
+            <table class="tabela-simples" style="min-width:100%;">
+              <thead><tr><th>Equipe</th><th>Proposto</th><th>Realizado</th><th>Desvio</th></tr></thead>
+              <tbody id="tabelaResumoEquipes">
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);font-size:.82rem;">Nenhum dado financeiro registrado</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:12px;display:flex;align-items:center;gap:7px;"><i data-lucide="pie-chart"></i> Por categoria</h3>
+            <div id="listaPotesOrcamento" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="vg-empty-state" style="padding:24px 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 12L2 12"/></svg>
+                <strong>Sem categorias</strong>
+                <p>Registre gastos para ver a distribuição por categoria.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planilha de gastos -->
+      <div id="sub-fin-planilha" class="sub-content">
+        <div id="areaAcoesFinanceiro" style="display:none;background:rgba(0,155,193,.04);border:1px dashed var(--primary);padding:18px;border-radius:var(--radius-lg);margin-bottom:16px;">
+          <div class="flex-between">
+            <div>
+              <h3 style="color:var(--primary);margin-bottom:4px;"><i data-lucide="plus-circle"></i> Ações da planilha</h3>
+              <p style="font-size:.84rem;color:var(--text-light);">Adicione eventos ou despesas avulsas à planilha principal.</p>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button id="btnAbrirModalDespesa" class="btn-primario"><i data-lucide="file-plus"></i> Nova linha</button>
+              <button id="btnExportarFinExcel" class="btn-acao" style="color:#107c41;border-color:#107c41;"><i data-lucide="sheet"></i> Exportar Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabela-container">
+          <table class="tabela-simples" style="min-width:1100px;font-size:.84rem;">
+            <thead>
+              <tr>
+                <th>Eq.</th><th>Categoria</th><th>Evento / Custo</th>
+                <th>Inscrição</th><th>Transp.</th><th>Hosped.</th><th>Aliment.</th><th>Outros</th>
+                <th>Proposto</th><th style="color:var(--secondary);">Realizado</th><th>Desvio</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaMasterFin"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================================================
+         CONFIGURAR PORTAL (admin only)
+         ================================================ -->
+    <section id="gestao">
+      <div class="section-header section-header--admin">
+        <div class="section-header__text">
+          <h2>Configurar Portal</h2>
+          <p>Defina critérios de pontuação, monitore a saúde do sistema e ajuste a identidade visual.</p>
+        </div>
+      </div>
+
+      <div class="sub-menu">
+        <button class="sub-tab active" data-target="sub-regras"><i data-lucide="list-checks"></i> Critérios de pontuação</button>
+        <button class="sub-tab" data-target="sub-dados"><i data-lucide="database"></i> Diagnóstico e dados</button>
+      </div>
+
+      <!-- Critérios -->
+      <div id="sub-regras" class="sub-content active">
+        <div style="margin-bottom:14px;">
+          <button id="abrirModalRegra" class="btn-primario"><i data-lucide="plus"></i> Nova regra</button>
+        </div>
+        <div class="tabela-container">
+          <table class="tabela-simples">
+            <thead><tr><th>Modalidade</th><th>Tipo</th><th>Pontos</th><th>Descrição</th><th>Ações</th></tr></thead>
+            <tbody id="listaRegras">
+              <tr id="listaRegrasEmpty"><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);font-size:.83rem;">Nenhuma regra cadastrada. Clique em "Nova regra" para começar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Diagnóstico -->
+      <div id="sub-dados" class="sub-content">
+        <div class="admin-control-hero card">
+          <div>
+            <span class="eyebrow">Centro de Controle</span>
+            <h3><i data-lucide="shield-check"></i> Administração do Portal</h3>
+            <p>Monitore a saúde da base, revise inconsistências e ajuste padrões do informativo.</p>
+          </div>
+          <div class="admin-control-hero-actions">
+            <button id="btnExportarBackupJson" class="btn-primario"><i data-lucide="download-cloud"></i> Backup JSON</button>
+            <button id="btnCarregarAuditoria" class="btn-acao"><i data-lucide="refresh-cw"></i> Atualizar auditoria</button>
+          </div>
+        </div>
+
+        <div class="admin-kpi-grid">
+          <div class="admin-kpi-card"><span>Total de atletas</span><strong id="adminQtdAtletas">0</strong><small>Cadastros aprovados</small></div>
+          <div class="admin-kpi-card"><span>Ativos</span><strong id="adminQtdAtivos">0</strong><small>Participando do programa</small></div>
+          <div class="admin-kpi-card"><span>Inativos</span><strong id="adminQtdInativos">0</strong><small>Fora da equipe ativa</small></div>
+          <div class="admin-kpi-card"><span>Comitê</span><strong id="adminQtdComite">0</strong><small>Usuários de gestão</small></div>
+          <div class="admin-kpi-card"><span>Lançamentos do mês</span><strong id="adminQtdLancMes">0</strong><small>Registros operacionais</small></div>
+          <div class="admin-kpi-card"><span>Eventos</span><strong id="adminQtdEventos">0</strong><small>Agenda cadastrada</small></div>
+          <div class="admin-kpi-card"><span>Auditoria</span><strong id="adminQtdAuditoria">0</strong><small>Registros rastreáveis</small></div>
+          <div class="admin-kpi-card"><span>Lançamentos totais</span><strong id="adminQtdLancamentos">0</strong><small>Histórico completo</small></div>
+        </div>
+
+        <div class="admin-control-layout">
+          <!-- Saúde da base -->
+          <div class="card admin-panel-card">
+            <div class="admin-panel-header">
+              <div>
+                <h3><i data-lucide="activity"></i> Saúde da base</h3>
+                <p>Checklist automático para encontrar pontos que precisam de revisão.</p>
+              </div>
+              <button id="btnAtualizarChecklistAdmin" class="btn-acao btn-compact"><i data-lucide="rotate-cw"></i> Recalcular</button>
+            </div>
+            <div id="adminChecklistBase" class="admin-check-list"></div>
+          </div>
+
+          <!-- Padrão do informativo -->
+          <div class="card admin-panel-card">
+            <div class="admin-panel-header">
+              <div>
+                <h3><i data-lucide="megaphone"></i> Padrão do informativo</h3>
+                <p>Configuração padrão usada ao gerar o comunicado mensal.</p>
+              </div>
+            </div>
+            <div class="admin-config-grid admin-config-grid-wide">
+              <label><span>Equipe padrão</span>
+                <select id="cfgInfoModalidadePadrao">
+                  <option value="todos">Bike e Corrida</option>
+                  <option value="bicicleta">Somente Bike</option>
+                  <option value="corrida">Somente Corrida</option>
+                </select>
+              </label>
+              <label><span>Quantidade na tabela</span>
+                <select id="cfgInfoLimitePadrao">
+                  <option value="10">Top 10</option>
+                  <option value="15">Top 15</option>
+                  <option value="20">Top 20</option>
+                  <option value="28">Até 28 linhas</option>
+                  <option value="todos">Todos</option>
+                </select>
+              </label>
+              <label><span>Critério de alerta</span>
+                <select id="cfgInfoAlertaCriterio">
+                  <option value="sem_treino_mes">Sem treino no mês</option>
+                  <option value="sem_treino_30d">Sem treino há mais de X dias</option>
+                  <option value="ate_x_treinos">Até X treinos no mês</option>
+                  <option value="ate_x_pontos">Até X pontos no mês</option>
+                </select>
+              </label>
+              <label><span>Valor do critério</span>
+                <input id="cfgInfoAlertaValor" type="number" min="0" value="30" placeholder="Ex: 30">
+              </label>
+            </div>
+            <div class="admin-config-checks">
+              <label><input id="cfgInfoKpisPadrao" type="checkbox" checked> KPIs do mês</label>
+              <label><input id="cfgInfoLegendaPadrao" type="checkbox" checked> Legenda</label>
+              <label><input id="cfgInfoTop3Padrao" type="checkbox" checked> Top 3 em verde</label>
+              <label><input id="cfgInfoAlertasPadrao" type="checkbox" checked> Atletas em alerta</label>
+              <label><input id="cfgInfoDemaisPadrao" type="checkbox" checked> Demais atletas</label>
+              <label><input id="cfgInfoAbrirPadrao" type="checkbox" checked> Abrir em nova aba</label>
+              <label><input id="cfgInfoPaginasPadrao" type="checkbox" checked> Separar Bike e Corrida</label>
+            </div>
+            <div class="admin-config-note">
+              <i data-lucide="info"></i>
+              <span>O comitê escolhe apenas equipe e formato. O restante segue este padrão.</span>
+            </div>
+            <div class="admin-actions-row">
+              <button id="btnSalvarPadraoInformativo" class="btn-primario"><i data-lucide="save"></i> Salvar padrão</button>
+              <button id="btnAbrirInformativoPadrao" class="btn-acao"><i data-lucide="file-text"></i> Gerar informativo</button>
+            </div>
+          </div>
+
+          <!-- Acessos -->
+          <div class="card admin-panel-card">
+            <div class="admin-panel-header">
+              <div>
+                <h3><i data-lucide="users-round"></i> Acessos e governança</h3>
+                <p>Resumo dos perfis carregados e lembretes de segurança.</p>
+              </div>
+            </div>
+            <div id="adminResumoAcessos" class="admin-access-list"></div>
+            <div class="admin-note-box">
+              <i data-lucide="lock-keyhole"></i>
+              <span>A segurança final precisa ser garantida nas regras do Firestore.</span>
+            </div>
+          </div>
+
+          <!-- Identidade visual -->
+          <div class="card admin-panel-card">
+            <div class="admin-panel-header">
+              <div>
+                <h3><i data-lucide="palette"></i> Identidade visual</h3>
+                <p>Logos e cores padrão usadas no portal, login e informativo.</p>
+              </div>
+            </div>
+            <div class="brand-admin-grid">
+              <div class="brand-preview brand-preview-dark">
+                <span>Logo branca</span>
+                <img src="assets/logos/logo-comite-branca-trim.png" alt="Logo branca" />
+                <small>Para header, login e fundos escuros.</small>
+              </div>
+              <div class="brand-preview brand-preview-light">
+                <span>Logo colorida</span>
+                <img src="assets/logos/logo-comite-colorida.png" alt="Logo colorida" />
+                <small>Para report e informativo.</small>
+              </div>
+            </div>
+            <div class="brand-editor-layout">
+              <div class="brand-color-editor">
+                <label>Cor principal <input type="color" id="brandCorPrincipal" value="#009bc1" /></label>
+                <label>Cor secundária <input type="color" id="brandCorSecundaria" value="#00b37e" /></label>
+                <label>Cor de destaque <input type="color" id="brandCorDestaque" value="#f37021" /></label>
+                <label>Cor de alerta <input type="color" id="brandCorAlerta" value="#e63946" /></label>
+                <label>Fundo claro <input type="color" id="brandFundoClaro" value="#f0f4f8" /></label>
+                <label>Fundo escuro <input type="color" id="brandFundoEscuro" value="#0f1117" /></label>
+                <label>Card escuro <input type="color" id="brandCardEscuro" value="#1a1d27" /></label>
+              </div>
+              <div id="brandPreviewTema" class="brand-theme-preview">
+                <div class="brand-theme-top"><span></span><strong>Prévia do tema</strong></div>
+                <div class="brand-theme-card">
+                  <small>Card do portal</small>
+                  <b>Atletas Energisa</b>
+                  <em>Botões e destaques acompanham as cores escolhidas.</em>
+                  <div class="brand-theme-actions">
+                    <span class="primary">Principal</span>
+                    <span class="secondary">Secundária</span>
+                    <span class="accent">Destaque</span>
+                  </div>
+                </div>
+                <code id="brandCodigoTemaAtual">Principal #009BC1 • Secundária #00B37E • Destaque #F37021</code>
+              </div>
+            </div>
+            <div class="brand-admin-actions">
+              <button id="btnSalvarIdentidadeVisual" class="btn-primario"><i data-lucide="save"></i> Salvar cores</button>
+              <button id="btnRestaurarIdentidadeVisual" class="btn-acao"><i data-lucide="rotate-ccw"></i> Restaurar padrão</button>
+            </div>
+            <div class="admin-note-box">
+              <i data-lucide="github"></i>
+              <span>Para alterar as logos, substitua os arquivos em <strong>assets/logos</strong> no GitHub.</span>
+            </div>
+          </div>
+
+          <!-- Manutenção sensível -->
+          <div class="card admin-panel-card danger-zone">
+            <div class="admin-panel-header">
+              <div>
+                <h3><i data-lucide="alert-octagon"></i> Manutenção sensível</h3>
+                <p>Use somente após exportar backup. Escolha exatamente o que deseja apagar.</p>
+              </div>
+            </div>
+            <div class="admin-danger-actions">
+              <button id="btnApagarLancamentos" class="btn-danger-soft"><i data-lucide="history"></i><span>Apagar lançamentos</span></button>
+              <button id="btnApagarEventos"     class="btn-danger-soft"><i data-lucide="calendar-x"></i><span>Apagar eventos</span></button>
+              <button id="btnApagarAtletas"     class="btn-danger-soft"><i data-lucide="user-x"></i><span>Apagar atletas</span></button>
+              <button id="btnApagarRegras"      class="btn-danger-soft"><i data-lucide="list-x"></i><span>Apagar regras</span></button>
+              <button id="btnApagarFinanceiro"  class="btn-danger-soft"><i data-lucide="badge-dollar-sign"></i><span>Apagar financeiro</span></button>
+              <button id="btnApagarComentarios" class="btn-danger-soft"><i data-lucide="message-square-x"></i><span>Apagar comentários</span></button>
+            </div>
+            <div class="admin-note-box" style="border-color:rgba(230,57,70,.2);background:rgba(230,57,70,.03);">
+              <i data-lucide="shield-alert"></i>
+              <span>Ações permanentes. Exclusão de atletas preserva administradores.</span>
+            </div>
+            <button id="btnLimparBase" class="danger-full-button"><i data-lucide="trash-2"></i> Zerar todo o banco de dados</button>
+          </div>
+        </div>
+
+        <!-- Auditoria -->
+        <div class="card admin-audit-card">
+          <div class="admin-audit-header">
+            <div>
+              <h3 style="color:var(--primary);"><i data-lucide="history"></i> Auditoria recente</h3>
+              <p style="font-size:.83rem;color:var(--text-light);margin-top:3px;">Últimas alterações sensíveis registradas no sistema.</p>
+            </div>
+          </div>
+          <div id="listaAuditoriaAdmin" class="admin-audit-list"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================================================
+         MINHA CONTA
+         ================================================ -->
+    <section id="configuracoes">
+      <div class="section-header">
+        <div class="section-header__text">
+          <h2>Minha Conta</h2>
+          <p>Personalize a aparência do portal e gerencie os dados da sua conta.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="margin-bottom:16px;"><i data-lucide="monitor"></i> Aparência</h3>
+          <p style="font-size:.78rem;color:var(--text-light);margin-bottom:10px;">Tema</p>
+          <div class="appearance-toggle" style="margin-bottom:20px;">
+            <button id="btnTemaClaro" class="appearance-toggle__btn" type="button"><i data-lucide="sun"></i> Claro</button>
+            <button id="btnTemaEscuro" class="appearance-toggle__btn" type="button"><i data-lucide="moon"></i> Escuro</button>
+          </div>
+          <p style="font-size:.78rem;color:var(--text-light);margin-bottom:10px;">Tamanho do texto</p>
+          <div class="appearance-toggle">
+            <button class="appearance-toggle__btn btn-zoom" data-size="14px" type="button">A−</button>
+            <button class="appearance-toggle__btn btn-zoom" data-size="16px" type="button">A</button>
+            <button class="appearance-toggle__btn btn-zoom" data-size="18px" type="button">A+</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:16px;"><i data-lucide="user-cog"></i> Dados da conta</h3>
+          <input type="password" id="confSenhaAtual" placeholder="Senha atual (obrigatório para alterar)" />
+          <input type="email"    id="confNovoEmail"  placeholder="Novo e-mail (opcional)" />
+          <input type="password" id="confNovaSenha"  placeholder="Nova senha (opcional)" />
+          <button id="btnSalvarConta" class="btn-primario" style="width:100%;justify-content:center;">
+            <i data-lucide="save"></i> Salvar alterações
+          </button>
+        </div>
+      </div>
+
+      <!-- Modelo da ficha -->
+      <div class="card config-ficha-card" style="margin-top:20px;">
+        <div class="config-ficha-header">
+          <div>
+            <h3><i data-lucide="clipboard-list"></i> Modelo da ficha do atleta</h3>
+            <p style="font-size:.85rem;color:var(--text-light);margin-top:4px;">Configure quais campos adicionais aparecem na ficha de todos os atletas.</p>
+          </div>
+        </div>
+        <div class="config-ficha-form">
+          <div><label>Nome do campo</label><input id="cfgCampoFichaLabel" type="text" placeholder="Ex: Tamanho da camisa" /></div>
+          <div>
+            <label>Tipo</label>
+            <select id="cfgCampoFichaTipo">
+              <option value="texto">Texto</option>
+              <option value="numero">Número</option>
+              <option value="data">Data</option>
+              <option value="selecao">Seleção</option>
+              <option value="simnao">Sim/Não</option>
+            </select>
+          </div>
+          <div><label>Grupo</label><input id="cfgCampoFichaGrupo" type="text" placeholder="Ex: Uniforme, Saúde" /></div>
+          <div><label>Opções</label><input id="cfgCampoFichaOpcoes" type="text" placeholder="Para seleção: P, M, G, GG" /></div>
+          <label class="config-ficha-check"><input id="cfgCampoFichaObrigatorio" type="checkbox" /> Obrigatório</label>
+          <button id="btnAdicionarCampoFichaConfig" class="btn-primario"><i data-lucide="plus"></i> Adicionar</button>
+        </div>
+        <div id="listaCamposFichaConfig" class="config-ficha-list"></div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ================================================
+       MODAIS
+       ================================================ -->
+
+  <!-- Editar atleta -->
+  <div id="modalEditarAtleta" style="display:none;">
+    <div style="max-width:600px;">
+      <h3><i data-lucide="user-cog"></i> Editar cadastro</h3>
+      <input type="hidden" id="editId" />
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div><label>Nome completo</label><input type="text" id="editNome" /></div>
+        <div><label>E-mail corporativo</label><input type="email" id="editEmail" /></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div><label>Sexo</label><select id="editSexo"><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Prefiro não informar">Prefiro não informar</option></select></div>
+        <div><label>Data de nascimento</label><input type="date" id="editNasc" /></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div><label>Localidade</label><input type="text" id="editLocalidade" /></div>
+        <div><label>Ano de entrada</label><input type="number" id="editAnoEntrada" /></div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label>Equipe / Papel</label>
+        <select id="editPapel">
+          <option value="Bicicleta">Bicicleta</option>
+          <option value="Corrida">Corrida</option>
+          <option value="Fila - Bicicleta">Fila — Bike</option>
+          <option value="Fila - Corrida">Fila — Corrida</option>
+          <option value="Comitê">Comitê Gestor</option>
+        </select>
+        <small id="avisoPerfilAdmin" style="display:none;color:var(--text-muted);margin-top:5px;font-size:.78rem;">Perfis de acesso são alterados apenas por administradores.</small>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="fecharModalEdit" class="btn-secundario">Cancelar</button>
+        <button id="salvarEditBtn" class="btn-primario" style="background:var(--warning);color:#333;">Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nova verba / despesa -->
+  <div id="modalLinhaVerba" style="display:none;">
+    <div style="max-width:600px;">
+      <h3><i data-lucide="file-plus"></i> Edição / Nova linha</h3>
+      <input type="hidden" id="verbaEditId" value="" />
+      <div style="background:rgba(243,112,33,.05);border:1px solid var(--accent);padding:12px;border-radius:var(--radius);margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="checkAvulso" style="width:18px;height:18px;" />
+        <div>
+          <label style="color:var(--accent);font-weight:700;cursor:pointer;" for="checkAvulso">É um custo avulso (não previsto)?</label>
+          <small style="color:var(--text-light);display:block;font-size:.78rem;">Se marcado, zerará o orçado e lançará o valor no realizado.</small>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div><label>Categoria estratégica</label>
+          <select id="verbaCategoria">
+            <option value="Provas / Inscrições">Provas / Inscrições</option>
+            <option value="Mensalidade Treinador">Mensalidade Treinador</option>
+            <option value="Encontros e Eventos">Encontros / Confraternizações</option>
+            <option value="Uniformes e Materiais">Uniformes / Materiais</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+        <div><label>Equipe</label>
+          <select id="verbaEquipe">
+            <option value="Corrida e Bike">Ambas</option>
+            <option value="Corrida">Corrida</option>
+            <option value="Bike">Bike</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;"><label>Título / descrição do custo</label><input type="text" id="verbaEvento" placeholder="Ex: Compra de Windbanner…" /></div>
+      <div id="areaProposto" style="background:rgba(0,155,193,.04);padding:14px;border-radius:var(--radius);margin-bottom:14px;">
+        <h4 style="margin:0 0 10px;color:var(--primary);font-size:.9rem;">Desdobramento do orçamento (proposto)</h4>
+        <div class="grid-2" style="gap:10px;">
+          <div><label>Inscrições (R$)</label><input type="number" id="vPropInsc" step="0.01" placeholder="0.00" /></div>
+          <div><label>Transporte (R$)</label><input type="number" id="vPropTransp" step="0.01" placeholder="0.00" /></div>
+          <div><label>Hospedagem (R$)</label><input type="number" id="vPropHosp" step="0.01" placeholder="0.00" /></div>
+          <div><label>Alimentação (R$)</label><input type="number" id="vPropAlim" step="0.01" placeholder="0.00" /></div>
+          <div style="grid-column:1/-1;"><label>Demais custos (R$)</label><input type="number" id="vPropDemais" step="0.01" placeholder="0.00" /></div>
+        </div>
+      </div>
+      <div style="background:rgba(39,174,96,.04);padding:14px;border-radius:var(--radius);margin-bottom:16px;">
+        <h4 style="margin:0 0 10px;color:#27ae60;font-size:.9rem;">Execução financeira (opcional)</h4>
+        <div><label>Total realmente gasto (R$)</label><input type="number" id="vRealizadoTotal" step="0.01" placeholder="0.00" style="border-color:#27ae60;" /></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="fecharModalVerba" class="btn-secundario">Cancelar</button>
+        <button id="salvarVerbaBtn" class="btn-primario">Salvar na planilha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ficha do atleta -->
+  <div id="modalFichaAtleta" class="ficha-modal-overlay" style="display:none;">
+    <div class="ficha-modal-shell">
+      <div class="ficha-modal-header">
+        <div class="ficha-header-main">
+          <div class="ficha-avatar-mini" id="fichaAvatarMini">AT</div>
+          <div>
+            <h2 id="fichaNome">Nome do Atleta</h2>
+            <span id="fichaEquipe">Equipe</span>
+          </div>
+        </div>
+        <button id="fecharModalFicha" class="btn-icon-soft"><i data-lucide="x"></i></button>
+      </div>
+
+      <input type="hidden" id="fichaAtletaId" />
+
+      <div class="ficha-tabs" role="tablist">
+        <button type="button" class="ficha-tab active" data-ficha-tab="resumo"><i data-lucide="layout-dashboard"></i> Resumo</button>
+        <button type="button" class="ficha-tab" data-ficha-tab="lancamentos"><i data-lucide="history"></i> Lançamentos</button>
+        <button type="button" class="ficha-tab" data-ficha-tab="dados"><i data-lucide="id-card"></i> Cadastro</button>
+        <button type="button" class="ficha-tab" data-ficha-tab="comentarios"><i data-lucide="message-square"></i> Comentários</button>
+        <button type="button" class="ficha-tab" data-ficha-tab="auditoria"><i data-lucide="shield-check"></i> Auditoria</button>
+      </div>
+
+      <!-- Resumo -->
+      <div class="ficha-tab-content active" id="ficha-tab-resumo">
+        <div class="ficha-metric-grid">
+          <div class="ficha-metric-card"><span>Total de Pontos</span><h3 id="fichaPontos">0</h3></div>
+          <div class="ficha-metric-card"><span>KM percorridos</span><h3 id="fichaKm">0 km</h3></div>
+          <div class="ficha-metric-card"><span>Status</span><h3 id="fichaStatus">Ativo</h3></div>
+        </div>
+        <div class="ficha-resumo-grid">
+          <div class="ficha-info-panel">
+            <h4><i data-lucide="user-round"></i> Dados rápidos</h4>
+            <div class="ficha-info-list">
+              <div><strong>Equipe</strong><span id="fichaEquipeInfo">-</span></div>
+              <div><strong>Localidade</strong><span id="fichaLocalidade">-</span></div>
+              <div><strong>Nascimento</strong><span id="fichaNasc">-</span></div>
+              <div><strong>Sexo</strong><span id="fichaSexo">-</span></div>
+              <div><strong>Entrada</strong><span id="fichaAnoEntrada">-</span></div>
+            </div>
+          </div>
+          <div class="ficha-status-panel">
+            <div class="ficha-status-head">
+              <div>
+                <h4>Status do atleta</h4>
+                <small>Ative ou desative diretamente pela ficha.</small>
+              </div>
+              <label class="switch ficha-switch"><input type="checkbox" id="fichaToggleAtivo"><span class="slider"></span></label>
+            </div>
+            <textarea id="fichaMotivoStatus" rows="3" placeholder="Justificativa para desativação/reativação…" class="ficha-motivo-textarea"></textarea>
+            <button id="btnSalvarStatusFicha" class="btn-acao ficha-salvar-status"><i data-lucide="save"></i> Salvar status</button>
+            <div id="fichaHistoricoStatus" class="ficha-status-history"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lançamentos -->
+      <div class="ficha-tab-content" id="ficha-tab-lancamentos">
+        <div class="ficha-section-title">
+          <h4><i data-lucide="history"></i> Histórico de lançamentos</h4>
+          <small>Pontuação, faltas justificadas e KM registrados para este atleta.</small>
+        </div>
+        <div id="fichaHistorico" class="ficha-scroll-list"></div>
+      </div>
+
+      <!-- Dados -->
+      <div class="ficha-tab-content" id="ficha-tab-dados">
+        <div class="ficha-extra-panel">
+          <div class="ficha-extra-head">
+            <div>
+              <h4>Dados complementares</h4>
+              <small>Campos definidos em Minha Conta › Modelo da ficha.</small>
+            </div>
+          </div>
+          <div id="fichaCamposModeloLista" class="ficha-modelo-list"></div>
+          <button id="btnSalvarCamposFichaModelo" class="btn-primario" style="width:100%;justify-content:center;margin-top:12px;">
+            <i data-lucide="save"></i> Salvar cadastro complementar
+          </button>
+        </div>
+      </div>
+
+      <!-- Comentários -->
+      <div class="ficha-tab-content" id="ficha-tab-comentarios">
+        <div class="ficha-section-title">
+          <h4><i data-lucide="message-square"></i> Comentários e observações</h4>
+          <small>Registre acompanhamentos, avisos, lesões ou atestados.</small>
+        </div>
+        <div id="fichaComentariosLista" class="ficha-scroll-list ficha-comments-list"></div>
+        <div class="ficha-comment-form">
+          <textarea id="novoComentarioFicha" placeholder="Registre uma observação…" rows="3"></textarea>
+          <button id="btnSalvarComentario" class="btn-primario"><i data-lucide="plus"></i> Adicionar comentário</button>
+        </div>
+      </div>
+
+      <!-- Auditoria -->
+      <div class="ficha-tab-content" id="ficha-tab-auditoria">
+        <div class="ficha-section-title">
+          <h4><i data-lucide="shield-check"></i> Auditoria da ficha</h4>
+          <small>Últimas alterações relacionadas ao atleta.</small>
+        </div>
+        <div id="fichaAuditoriaLista" class="ficha-scroll-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal regra -->
+  <div id="modalRegra" style="display:none;">
+    <div>
+      <h3><i data-lucide="list-checks"></i> Nova / editar regra</h3>
+      <input type="hidden" id="regraEditId" value="" />
+      <div style="margin-bottom:14px;">
+        <label>Descrição da regra</label>
+        <input type="text" id="regraDescricao" placeholder="Ex: Treino com uniforme" />
+      </div>
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div>
+          <label>Modalidade</label>
+          <select id="regraModalidade">
+            <option value="Ambas">Ambas</option>
+            <option value="Bicicleta">Bicicleta</option>
+            <option value="Corrida">Corrida</option>
+          </select>
+        </div>
+        <div>
+          <label>Pontos</label>
+          <input type="number" id="regraPontos" placeholder="0" />
+        </div>
+      </div>
+      <div class="regra-tipo-box">
+        <label style="color:var(--primary);font-weight:700;font-size:.85rem;margin-bottom:8px;">Exibir em quais lançamentos?</label>
+        <div class="regra-tipo-grid">
+          <label><input type="checkbox" class="chk-tipo-regra" value="treino" checked> Treino</label>
+          <label><input type="checkbox" class="chk-tipo-regra" value="evento" checked> Evento</label>
+          <label><input type="checkbox" class="chk-tipo-regra" value="avulso" checked> Avulso</label>
+        </div>
+        <small style="color:var(--text-muted);font-size:.78rem;">Esconda regras que não fazem sentido em algum tipo de lançamento.</small>
+      </div>
+      <div style="margin-top:14px;background:rgba(243,112,33,.04);border:1px solid rgba(243,112,33,.25);padding:14px;border-radius:var(--radius);">
+        <label style="color:var(--accent);display:flex;align-items:center;gap:5px;margin-bottom:5px;font-size:.85rem;"><i data-lucide="link" style="width:14px;"></i> Restrição de concorrência</label>
+        <p style="font-size:.76rem;color:var(--text-light);margin-bottom:10px;">Regras que <b>NÃO</b> podem ser pontuadas junto com esta.</p>
+        <div id="listaVinculosRegras" style="max-height:120px;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:.84rem;"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+        <button id="fecharModalRegra" class="btn-secundario">Cancelar</button>
+        <button id="salvarRegraBtn" class="btn-primario">Salvar regra</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal permissões -->
+  <div id="modalPermissoes" style="display:none;">
+    <div style="max-width:420px;">
+      <h3><i data-lucide="shield"></i> Permissões</h3>
+      <p id="permNomeUsuario" style="font-weight:700;color:var(--primary);margin-bottom:14px;"></p>
+      <input type="hidden" id="permUserId" />
+      <div class="perm-profile-box">
+        <label>Perfil rápido</label>
+        <select id="permPerfilRapido">
+          <option value="">Selecionar perfil…</option>
+          <option value="consulta">Consulta</option>
+          <option value="pontuacao">Comitê Pontuação</option>
+          <option value="financeiro">Comitê Financeiro</option>
+          <option value="gestao">Comitê Gestão</option>
+          <option value="geral">Comitê Geral</option>
+        </select>
+        <small>Use o perfil para evitar combinações erradas de permissões.</small>
+      </div>
+      <div class="perm-item"><label><i data-lucide="layout-dashboard"></i> Estratégico (visualizar)</label><input type="checkbox" class="chk-perm" value="visao-geral" /></div>
+      <div class="perm-item"><label><i data-lucide="clipboard-pen-line"></i> Contabilização (lançamentos)</label><input type="checkbox" class="chk-perm" value="contabilizacao" /></div>
+      <div class="perm-item"><label style="color:#27ae60;font-weight:700;"><i data-lucide="badge-dollar-sign"></i> Financeiro (acesso e edição)</label><input type="checkbox" class="chk-perm" value="financeiro_edit" /></div>
+      <div class="perm-item"><label><i data-lucide="users-round"></i> Gestão de base (aprovações)</label><input type="checkbox" class="chk-perm" value="gestao" /></div>
+      <div class="perm-item"><label><i data-lucide="settings"></i> Configurações (minha conta)</label><input type="checkbox" class="chk-perm" value="configuracoes" /></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+        <button id="fecharModalPermissoes" class="btn-secundario">Cancelar</button>
+        <button id="salvarPermissoesBtn" class="btn-primario">Salvar acessos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal evento -->
+  <div id="modalEvento" class="pm-overlay" style="display:none;">
+    <div class="pm-dialog">
+      <div class="pm-dialog__header">
+        <div class="pm-dialog__icon"><i data-lucide="calendar-plus"></i></div>
+        <div>
+          <h3 class="pm-dialog__title">Agendar evento</h3>
+          <p class="pm-dialog__desc">Adicione um novo evento à agenda do programa.</p>
+        </div>
+        <button id="fecharModalEvento" class="btn-icon-soft" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </div>
+      <div class="pm-dialog__body">
+        <div class="pm-field">
+          <label class="pm-label">Nome do evento</label>
+          <input class="pm-input" type="text" id="eventoTitulo" placeholder="Ex: Corrida Rústica 10k" />
+        </div>
+        <div class="pm-field">
+          <label class="pm-label">Local / ponto de encontro</label>
+          <input class="pm-input" type="text" id="eventoLocal" placeholder="Ex: Parque da Cidade, portão 3" />
+        </div>
+        <div class="pm-field-row">
+          <div class="pm-field">
+            <label class="pm-label">Data</label>
+            <input class="pm-input" type="date" id="eventoData" />
+          </div>
+          <div class="pm-field">
+            <label class="pm-label">KM previstos / atleta</label>
+            <input class="pm-input" type="number" id="eventoKm" min="0" step="0.1" placeholder="0" />
+          </div>
+        </div>
+        <div class="pm-field">
+          <label class="pm-label">Modalidade</label>
+          <div class="pm-seg" id="eventoModalidadeSeg">
+            <button type="button" class="pm-seg__btn active" data-value="Ambas">Ambas</button>
+            <button type="button" class="pm-seg__btn" data-value="Bicicleta"><i data-lucide="bike"></i> Bike</button>
+            <button type="button" class="pm-seg__btn" data-value="Corrida"><i data-lucide="footprints"></i> Corrida</button>
+          </div>
+          <select id="eventoModalidade" style="display:none;">
+            <option value="Ambas">Ambas</option>
+            <option value="Bicicleta">Bicicleta</option>
+            <option value="Corrida">Corrida</option>
+          </select>
+        </div>
+      </div>
+      <div class="pm-dialog__footer">
+        <button id="fecharModalEvento2" class="pm-btn-cancel" type="button">Cancelar</button>
+        <button id="salvarEventoBtn" class="pm-btn-confirm" type="button">
+          <i data-lucide="check"></i> Salvar evento
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal informativo ranking -->
+  <div id="modalInformativoRanking" class="modal-informativo-overlay" style="display:none;">
+    <div class="modal-informativo-card">
+      <div class="modal-informativo-header">
+        <div>
+          <span class="eyebrow" style="color:var(--primary);">Informativo dos atletas</span>
+          <h3>Gerar ranking mensal</h3>
+          <p>Escolha equipe e formato. Blocos e alertas seguem o padrão definido no Admin.</p>
+        </div>
+        <button id="btnFecharModalInformativo" class="btn-icon-soft" type="button"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-informativo-grid">
+        <label>
+          <span>Equipe</span>
+          <select id="filtroInformativoModalidade">
+            <option value="todos">Bike e Corrida</option>
+            <option value="bicicleta">Somente Bike</option>
+            <option value="corrida">Somente Corrida</option>
+          </select>
+        </label>
+        <label>
+          <span>Formato</span>
+          <select id="filtroInformativoFormato">
+            <option value="html">HTML para enviar/baixar</option>
+            <option value="pdf">PDF / imprimir</option>
+          </select>
+        </label>
+      </div>
+      <div id="resumoPadraoInformativoModal" class="modal-informativo-note">
+        <i data-lucide="settings-2"></i><span>Usando padrão definido em Gestão › Padrão do informativo.</span>
+      </div>
+      <div class="modal-informativo-actions">
+        <button id="btnCancelarInformativoRanking" class="btn-secundario" type="button">Cancelar</button>
+        <button id="btnConfirmarInformativoRanking" class="btn-primario" type="button">
+          <i data-lucide="download"></i> Gerar informativo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmação -->
+  <div id="modalConfirmacao" style="display:none;">
+    <div>
+      <h3 id="confirmTitulo">Confirmação</h3>
+      <p id="confirmMensagem">Tem certeza?</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+        <button id="btnConfirmCancel" class="btn-secundario" style="flex:1;">Cancelar</button>
+        <button id="btnConfirmOk" class="btn-primario" style="flex:1;justify-content:center;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmação destrutiva com palavra-chave -->
+  <div id="modalConfirmacaoDestrutiva" style="display:none;" class="modal-overlay">
+    <div class="modal-box" style="max-width:440px;">
+      <div class="modal-box__header modal-box__header--danger">
+        <i data-lucide="triangle-alert"></i>
+        <h3>Ação irreversível</h3>
+      </div>
+      <div class="modal-box__body">
+        <p id="confirmDestrMensagem" style="margin-bottom:16px;color:var(--text-light);font-size:.9rem;"></p>
+        <label for="confirmDestrInput">Digite <strong id="confirmDestrPalavra" style="color:var(--danger);"></strong> para confirmar:</label>
+        <input type="text" id="confirmDestrInput" placeholder="Digite aqui…" autocomplete="off" style="margin-top:6px;" />
+      </div>
+      <div class="modal-box__footer">
+        <button id="confirmDestrCancel" class="btn-secundario">Cancelar</button>
+        <button id="confirmDestrOk" class="btn-danger" disabled>Confirmar exclusão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF overlay -->
+  <div id="pdfOverlay" style="display:none;">
+    <div id="pdfPrintArea" class="pdf-a4-report">
+      <div class="pdf-header">
+        <div>
+          <h1>Report Oficial — Atletas Energisa</h1>
+          <p>Resumo executivo gerado em <strong id="pdfDataHoje"></strong></p>
+        </div>
+        <img src="assets/logos/logo-comite-branca-trim.png" alt="Energisa" onerror="this.style.display='none';" />
+      </div>
+      <div class="pdf-kpi-grid">
+        <div><span>Atletas ativos</span><strong id="pdfAtivos">0</strong></div>
+        <div><span>Engajamento 30d</span><strong id="pdfEngajamento">0%</strong></div>
+        <div><span>KM total</span><strong id="pdfKmTotal">0 km</strong></div>
+        <div><span>Custo realizado</span><strong id="pdfInvest">R$ 0,00</strong></div>
+        <div><span>Custo / atleta</span><strong id="pdfRoi">R$ 0,00</strong></div>
+        <div><span>Participações</span><strong id="pdfParticipacoes">0</strong></div>
+      </div>
+      <div class="pdf-section pdf-analysis-section">
+        <h2>Leitura executiva</h2>
+        <ul id="pdfAnalises" class="pdf-clean-list"></ul>
+      </div>
+      <div class="pdf-section pdf-chart-section">
+        <h2>Evolução anual de pontos</h2>
+        <img id="pdfImgTendencia" src="" alt="" />
+      </div>
+      <div class="pdf-two-col">
+        <div class="pdf-section">
+          <h2>Performance por modalidade</h2>
+          <div class="pdf-mini-grid">
+            <div><span>Média Bike</span><strong id="pdfMediaBike">0</strong></div>
+            <div><span>Média Corrida</span><strong id="pdfMediaCorrida">0</strong></div>
+            <div><span>KM Bike</span><strong id="pdfKmBike">0 km</strong></div>
+            <div><span>KM Corrida</span><strong id="pdfKmCorrida">0 km</strong></div>
+          </div>
+        </div>
+        <div class="pdf-section">
+          <h2>Alertas de gestão</h2>
+          <ul id="pdfListaEvasao" class="pdf-clean-list"></ul>
+        </div>
+      </div>
+      <div class="pdf-three-col">
+        <div class="pdf-section"><h2>Pódio Bike</h2><ul id="pdfTopBike" class="pdf-clean-list"></ul></div>
+        <div class="pdf-section"><h2>Pódio Corrida</h2><ul id="pdfTopCorrida" class="pdf-clean-list"></ul></div>
+        <div class="pdf-section"><h2>Últimos lançamentos</h2><div id="pdfUltimosEventos" class="pdf-compact-list"></div></div>
+      </div>
+      <div class="pdf-section pdf-footer-section">
+        <h2>Próximos eventos</h2>
+        <div id="pdfProximosEventos" class="pdf-compact-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
